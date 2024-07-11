@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -67,7 +68,6 @@ func getMovieInfo(movieName string) {
 
 func main() {
 
-	// Get all file names in the directory
 	files, err := os.ReadDir(moviesDir)
 	if err != nil {
 		fmt.Println("Error reading directory:", err)
@@ -76,7 +76,6 @@ func main() {
 
 	examples := make([]string, 0, len(files))
 
-	// Read the file names
 	for _, file := range files {
 		if !file.IsDir() {
 			examples = append(examples, file.Name())
@@ -87,6 +86,13 @@ func main() {
 	formattedExamples := make([]string, len(examples))
 
 	for i, example := range examples {
+		example = strings.TrimSuffix(example, filepath.Ext(example))
+
+		if strings.Contains(example, ":") || (len(example) > 0 && !strings.ContainsAny(example, "0123456789")) {
+			formattedExamples[i] = example
+			continue
+		}
+
 		matches := re.FindStringSubmatch(example)
 		if matches != nil {
 			formattedTitle := matches[1]
@@ -95,18 +101,22 @@ func main() {
 
 			formattedTitle = strings.ReplaceAll(formattedTitle, ".", " ")
 			formattedTitle = strings.ReplaceAll(formattedTitle, "/", " ")
+
 			formattedTitle = strings.TrimSpace(formattedTitle)
 
 			if part != "" {
 				formattedTitle = fmt.Sprintf("%s %s", formattedTitle, part)
 			}
+
 			if year != "" {
 				formattedTitle = fmt.Sprintf("%s %s", formattedTitle, year)
 			}
 
 			formattedTitle = strings.ReplaceAll(formattedTitle, "(", "")
 			formattedTitle = strings.ReplaceAll(formattedTitle, ")", "")
+
 			formattedTitle = strings.TrimSpace(strings.ReplaceAll(formattedTitle, "\u00A0", " "))
+
 			formattedExamples[i] = formattedTitle
 		} else {
 			fmt.Printf("Warning: Couldn't format title: %s\n", example)
